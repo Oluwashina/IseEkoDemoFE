@@ -11,7 +11,7 @@ export const mockUser = {
   state: "Lagos",
   address: "14 Allen Avenue, Ikeja, Lagos",
   nin: "12345678901",
-  bvn: "22345678901",
+  lassra: "LSR-2024-001234",
   disability: false,
   disabilityType: null,
   profileImage: null,
@@ -88,6 +88,7 @@ export const mockUser = {
       company: "Flutterwave",
       appliedDate: "2026-05-01",
       status: "shortlisted",
+      note: "You were shortlisted from 142 applicants. The recruiter will contact you within 3 business days.",
     },
     {
       id: "app2",
@@ -95,7 +96,12 @@ export const mockUser = {
       jobTitle: "UX/UI Designer",
       company: "Paystack",
       appliedDate: "2026-05-08",
-      status: "reviewed",
+      status: "interview",
+      interviewDate: "Wed 28 May 2026",
+      interviewTime: "10:00 AM",
+      interviewType: "Video Call",
+      interviewPlatform: "Google Meet",
+      interviewLink: "#",
     },
     {
       id: "app3",
@@ -112,6 +118,26 @@ export const mockUser = {
       company: "Access Bank",
       appliedDate: "2026-04-20",
       status: "rejected",
+      rejectionReason: "The role required 3+ years of banking sector experience. We encourage you to apply again as your experience grows.",
+    },
+    {
+      id: "app5",
+      jobId: "j004",
+      jobTitle: "Customer Service Executive",
+      company: "Jumia Nigeria",
+      appliedDate: "2026-04-15",
+      status: "offer",
+      offerSalary: "₦150,000/month",
+      offerDeadline: "2026-05-30",
+      offerType: "Full-time",
+    },
+    {
+      id: "app6",
+      jobId: "j005",
+      jobTitle: "Civil Engineer",
+      company: "Julius Berger Nigeria",
+      appliedDate: "2026-05-14",
+      status: "reviewed",
     },
   ],
 
@@ -119,4 +145,27 @@ export const mockUser = {
 
   enrolledTrainings: ["t001", "t003"],
   completedTrainings: ["t005"],
+  recommendedTrainings: ["t004", "t002"],
+
+  trainingProgress: {
+    t001: { started: true, progressPercent: 42, lastActivity: "2026-05-20", nextSession: "2026-05-27" },
+    t003: { started: false, progressPercent: 0,  lastActivity: null,         nextSession: "2026-06-10" },
+  },
+
+  certifications: [
+    {
+      id: "cert001",
+      trainingId: "t005",
+      title: "Certified Fashion Artisan",
+      provider: "Lagos State Fashion Council",
+      issuedDate: "2026-04-30",
+      credentialId: "LSFC-2026-00412",
+      logoColor: "#DB2777",
+      providerLogo: "LF",
+      category: "Vocational",
+      description: "Awarded for successful completion of the 3-month Tailoring & Fashion Design programme.",
+      skills: ["Tailoring", "Pattern Making", "Fabric Selection", "Garment Construction"],
+      verifyUrl: "#",
+    },
+  ],
 };

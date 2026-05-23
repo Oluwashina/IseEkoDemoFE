@@ -90,7 +90,7 @@ export default function JobseekerDashboard() {
           { href: "/jobseeker/jobs", icon: Briefcase, label: "Find Jobs", color: "bg-[#EEF2FF] text-[#1E3FAE]", count: "892 open" },
           { href: "/jobseeker/cv", icon: FileText, label: "My CV", color: "bg-green-50 text-green-700", count: mockUser.cvValidated ? "Validated ✓" : "Upload CV" },
           { href: "/jobseeker/training", icon: GraduationCap, label: "Training", color: "bg-yellow-50 text-yellow-700", count: "47 programmes" },
-          { href: "/jobseeker/applications", icon: ClipboardList, label: "Applications", color: "bg-red-50 text-red-600", count: `${mockUser.applications.length} total` },
+          { href: "/jobseeker/applications", icon: ClipboardList, label: "Job Applications", color: "bg-red-50 text-red-600", count: `${mockUser.applications.length} total` },
         ].map(({ href, icon: Icon, label, color, count }) => (
           <Link
             key={href}

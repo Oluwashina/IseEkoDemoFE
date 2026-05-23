@@ -27,7 +27,7 @@ const stats = [
   { value: "14,782", label: "Registered Job Seekers", sub: "Active on the platform" },
   { value: "892",    label: "Live Vacancies",          sub: "Across all sectors" },
   { value: "634",    label: "Verified Employers",      sub: "Public & private sector" },
-  { value: "318",    label: "Placements This Month",   sub: "Confirmed hires" },
+  { value: "318",    label: "Total Placements",   sub: "Confirmed hires" },
 ];
 
 const howItWorks = [
@@ -150,7 +150,7 @@ const features = [
   },
   {
     icon: Shield,
-    title: "Identity Verification (NIN/BVN)",
+    title: "Identity Verification (NIN/LASSRA)",
     desc: "Secure registration using Nigeria's national identity infrastructure. Your data is encrypted and never shared with employers.",
     badge: "NDPR Compliant",
     badgeColor: "bg-red-100 text-red-600",
@@ -290,7 +290,7 @@ export default function Home() {
             </div>
 
             {/* Right — Interactive card stack */}
-            <div className="flex-shrink-0 flex flex-col gap-3 w-full max-w-xs">
+            <div className="shrink-0 flex flex-col gap-3 w-full max-w-xs">
               {/* Job match card */}
               <div className="bg-white/10 border border-white/15 rounded-2xl p-4 backdrop-blur-sm">
                 <div className="flex items-center justify-between mb-3">
@@ -620,7 +620,7 @@ export default function Home() {
                 <div className="flex flex-col gap-2">
                   {programmes.map((p) => (
                     <div key={p} className="flex items-center gap-2 text-sm text-gray-600">
-                      <Star className="w-3 h-3 text-yellow-400 flex-shrink-0" />
+                      <Star className="w-3 h-3 text-yellow-400 shrink-0" />
                       {p}
                     </div>
                   ))}
@@ -696,7 +696,7 @@ export default function Home() {
                 <p className="text-sm text-gray-600 leading-relaxed flex-1">&ldquo;{quote}&rdquo;</p>
                 <div className="flex items-center gap-3 pt-3 border-t border-gray-200">
                   <div
-                    className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0"
+                    className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold shrink-0"
                     style={{ backgroundColor: color }}
                   >
                     {initials}
@@ -708,7 +708,7 @@ export default function Home() {
                       <MapPin className="w-3 h-3" /> {lga}, Lagos
                     </p>
                   </div>
-                  <div className="text-right flex-shrink-0">
+                  <div className="text-right shrink-0">
                     <p className="text-xs text-gray-400">Match score</p>
                     <p className="text-lg font-bold text-[#1E3FAE]">{score}%</p>
                   </div>
@@ -741,8 +741,8 @@ export default function Home() {
 
       {/* ── CTA ────────────────────────────────────────────────────────────── */}
       <section className="py-20 bg-[#0B1D6E] relative overflow-hidden">
-        <div className="absolute top-[-60px] right-[-60px] w-[300px] h-[300px] rounded-full border border-white/10" />
-        <div className="absolute bottom-[-60px] left-[-60px] w-[280px] h-[280px] rounded-full bg-[#1E3FAE]/40" />
+        <div className="absolute -top-15 -right-15 w-75 h-75 rounded-full border border-white/10" />
+        <div className="absolute -bottom-15 -left-15 w-70 h-70 rounded-full bg-[#1E3FAE]/40" />
         <div className="max-w-3xl mx-auto px-6 text-center relative z-10">
           <h2 className="text-4xl font-bold text-white mb-4">
             Your next opportunity

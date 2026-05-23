@@ -36,7 +36,7 @@ const KPI_CARDS = [
     trend: "+12.1%",
   },
   {
-    label: "Placements This Month",
+    label: "Total Placements",
     value: mockDashboardStats.placementsThisMonth.toLocaleString(),
     sub: "Confirmed employment outcomes",
     icon: TrendingUp,

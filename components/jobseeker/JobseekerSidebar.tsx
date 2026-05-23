@@ -18,7 +18,7 @@ import IseEkoLogo from "@/components/ui/IseEkoLogo";
 const nav = [
   { href: "/jobseeker/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/jobseeker/jobs", label: "Find Jobs", icon: Briefcase },
-  { href: "/jobseeker/applications", label: "My Applications", icon: ClipboardList },
+  { href: "/jobseeker/applications", label: "Job Applications", icon: ClipboardList },
   { href: "/jobseeker/cv", label: "My CV", icon: FileText },
   { href: "/jobseeker/training", label: "Training & Skills", icon: GraduationCap },
   { href: "/jobseeker/profile", label: "My Profile", icon: User },
@@ -82,7 +82,7 @@ export default function JobseekerSidebar({ onClose }: Props) {
             >
               <Icon className="w-4 h-4 flex-shrink-0" />
               {label}
-              {label === "My Applications" && (
+              {label === "Job Applications" && (
                 <span className="ml-auto bg-yellow-400 text-[#0B1D6E] text-xs font-bold px-1.5 py-0.5 rounded-full">
                   4
                 </span>
