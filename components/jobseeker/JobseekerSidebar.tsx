@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { mockUser } from "@/lib/mock/user";
+import { useProfile } from "@/lib/profileContext";
 import {
   LayoutDashboard,
   Briefcase,
@@ -30,6 +32,7 @@ interface Props {
 
 export default function JobseekerSidebar({ onClose }: Props) {
   const pathname = usePathname();
+  const { profileCompletion, photoUrl } = useProfile();
 
   return (
     <aside className="w-64 bg-[#0B1D6E] flex flex-col h-full">
@@ -46,8 +49,12 @@ export default function JobseekerSidebar({ onClose }: Props) {
       {/* User quick info */}
       <div className="px-5 py-4 border-b border-white/10">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-yellow-400 flex items-center justify-center text-[#0B1D6E] font-bold text-sm flex-shrink-0">
-            AO
+          <div className="w-9 h-9 rounded-full overflow-hidden bg-yellow-400 flex items-center justify-center text-[#0B1D6E] font-bold text-sm flex-shrink-0">
+            {photoUrl
+              // eslint-disable-next-line @next/next/no-img-element
+              ? <img src={photoUrl} alt="Profile" className="w-full h-full object-cover" />
+              : "AO"
+            }
           </div>
           <div className="min-w-0">
             <p className="text-white text-sm font-semibold truncate">Adaeze Okonkwo</p>
@@ -58,10 +65,15 @@ export default function JobseekerSidebar({ onClose }: Props) {
         <div className="mt-3">
           <div className="flex justify-between text-xs mb-1">
             <span className="text-white/60">Profile complete</span>
-            <span className="text-yellow-400 font-semibold">78%</span>
+            <span className={`font-semibold ${profileCompletion === 100 ? "text-green-400" : "text-yellow-400"}`}>
+              {profileCompletion}%
+            </span>
           </div>
           <div className="h-1.5 bg-white/10 rounded-full">
-            <div className="h-1.5 bg-yellow-400 rounded-full" style={{ width: "78%" }} />
+            <div
+              className={`h-1.5 rounded-full transition-all duration-500 ${profileCompletion === 100 ? "bg-green-400" : "bg-yellow-400"}`}
+              style={{ width: `${profileCompletion}%` }}
+            />
           </div>
         </div>
       </div>

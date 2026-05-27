@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import {
   Briefcase,
@@ -14,6 +16,7 @@ import {
 } from "lucide-react";
 import { mockJobs } from "@/lib/mock/jobs";
 import { mockUser } from "@/lib/mock/user";
+import { useProfile } from "@/lib/profileContext";
 
 const statusColors: Record<string, string> = {
   applied: "bg-blue-100 text-blue-700",
@@ -30,6 +33,7 @@ const statusLabels: Record<string, string> = {
 };
 
 export default function JobseekerDashboard() {
+  const { profileCompletion } = useProfile();
   const topMatches = mockJobs.slice(0, 3);
   const recentApplications = mockUser.applications.slice(0, 3);
 
@@ -62,13 +66,13 @@ export default function JobseekerDashboard() {
       </div>
 
       {/* Profile completion alert */}
-      {mockUser.profileCompletion < 100 && (
+      {profileCompletion < 100 && (
         <div className="bg-[#EEF2FF] border border-[#1E3FAE]/20 rounded-xl p-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <AlertCircle className="w-5 h-5 text-[#1E3FAE] flex-shrink-0" />
             <div>
               <p className="text-sm font-semibold text-[#0B1D6E]">
-                Your profile is {mockUser.profileCompletion}% complete
+                Your profile is {profileCompletion}% complete
               </p>
               <p className="text-xs text-gray-500 mt-0.5">
                 Complete your profile to get better job matches and be visible to employers.

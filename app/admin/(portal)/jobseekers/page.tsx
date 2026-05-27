@@ -1,11 +1,118 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Search, ChevronDown, Eye, FileText, MoreHorizontal,
-  Users, Shield, Accessibility, User,
+  Users, Shield, Accessibility, User, Check, X,
 } from "lucide-react";
 import { mockJobseekers } from "@/lib/mock/admin";
+
+// ─── Reusable multi-select dropdown ──────────────────────────────────────────
+
+function MultiSelect({
+  label,
+  options,
+  selected,
+  onChange,
+}: {
+  label: string;
+  options: { value: string; display: string }[];
+  selected: Set<string>;
+  onChange: (next: Set<string>) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  function toggle(value: string) {
+    const next = new Set(selected);
+    next.has(value) ? next.delete(value) : next.add(value);
+    onChange(next);
+  }
+
+  function toggleAll() {
+    onChange(selected.size === options.length ? new Set() : new Set(options.map((o) => o.value)));
+  }
+
+  const summary =
+    selected.size === 0
+      ? `All ${label}`
+      : selected.size === 1
+      ? options.find((o) => o.value === [...selected][0])?.display ?? "1 selected"
+      : `${selected.size} ${label}`;
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className={`flex items-center gap-2 bg-[#F8F9FC] border rounded-xl pl-3 pr-2.5 py-2.5 text-sm transition cursor-pointer min-w-[140px] ${
+          selected.size > 0
+            ? "border-[#1E3FAE] bg-[#EEF2FF] text-[#1E3FAE] font-semibold"
+            : "border-gray-100 text-gray-700"
+        }`}
+      >
+        <span className="flex-1 text-left truncate">{summary}</span>
+        {selected.size > 0 && (
+          <span
+            onClick={(e) => { e.stopPropagation(); onChange(new Set()); }}
+            className="w-4 h-4 rounded-full bg-[#1E3FAE]/20 hover:bg-[#1E3FAE]/40 flex items-center justify-center flex-shrink-0 transition"
+          >
+            <X className="w-2.5 h-2.5" />
+          </span>
+        )}
+        <ChevronDown className={`w-3.5 h-3.5 flex-shrink-0 transition-transform text-gray-400 ${open ? "rotate-180" : ""}`} />
+      </button>
+
+      {open && (
+        <div className="absolute top-full left-0 mt-1.5 bg-white border border-gray-200 rounded-2xl shadow-xl z-20 min-w-[180px] overflow-hidden">
+          {/* Select all toggle */}
+          <button
+            onClick={toggleAll}
+            className="w-full flex items-center gap-2.5 px-4 py-2.5 text-xs font-semibold text-gray-500 hover:bg-gray-50 border-b border-gray-100 transition"
+          >
+            <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition ${
+              selected.size === options.length
+                ? "bg-[#1E3FAE] border-[#1E3FAE]"
+                : selected.size > 0
+                ? "border-[#1E3FAE]"
+                : "border-gray-300"
+            }`}>
+              {selected.size === options.length && <Check className="w-2.5 h-2.5 text-white" />}
+              {selected.size > 0 && selected.size < options.length && (
+                <div className="w-2 h-0.5 bg-[#1E3FAE]" />
+              )}
+            </div>
+            {selected.size === options.length ? "Deselect all" : "Select all"}
+          </button>
+
+          {options.map(({ value, display }) => (
+            <button
+              key={value}
+              onClick={() => toggle(value)}
+              className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm text-left hover:bg-[#EEF2FF] transition"
+            >
+              <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition ${
+                selected.has(value) ? "bg-[#1E3FAE] border-[#1E3FAE]" : "border-gray-300"
+              }`}>
+                {selected.has(value) && <Check className="w-2.5 h-2.5 text-white" />}
+              </div>
+              <span className={selected.has(value) ? "font-semibold text-[#1E3FAE]" : "text-gray-700"}>
+                {display}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const statusConfig: Record<string, { label: string; bg: string; text: string }> = {
   seeking:      { label: "Seeking",      bg: "bg-blue-100",   text: "text-blue-700" },
@@ -15,9 +122,9 @@ const statusConfig: Record<string, { label: string; bg: string; text: string }> 
 };
 
 export default function JobseekersPage() {
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("All");
-  const [lgaFilter, setLgaFilter] = useState("All LGAs");
+  const [search, setSearch]               = useState("");
+  const [selectedStatuses, setSelectedStatuses] = useState<Set<string>>(new Set());
+  const [selectedLGAs, setSelectedLGAs]   = useState<Set<string>>(new Set());
   const [selectedSeeker, setSelectedSeeker] = useState<typeof mockJobseekers[0] | null>(null);
 
   const filtered = mockJobseekers.filter((s) => {
@@ -25,12 +132,21 @@ export default function JobseekersPage() {
       !search ||
       s.name.toLowerCase().includes(search.toLowerCase()) ||
       s.skills.some((sk) => sk.toLowerCase().includes(search.toLowerCase()));
-    const matchStatus = statusFilter === "All" || s.status === statusFilter;
-    const matchLga = lgaFilter === "All LGAs" || s.lga === lgaFilter;
+    const matchStatus = selectedStatuses.size === 0 || selectedStatuses.has(s.status);
+    const matchLga    = selectedLGAs.size === 0     || selectedLGAs.has(s.lga);
     return matchSearch && matchStatus && matchLga;
   });
 
-  const lgas = ["All LGAs", ...Array.from(new Set(mockJobseekers.map((s) => s.lga)))];
+  const lgaOptions = Array.from(new Set(mockJobseekers.map((s) => s.lga)))
+    .sort()
+    .map((l) => ({ value: l, display: l }));
+
+  const statusOptions = Object.entries(statusConfig).map(([value, { label }]) => ({
+    value,
+    display: label,
+  }));
+
+  const activeFilterCount = selectedStatuses.size + selectedLGAs.size;
 
   return (
     <div className="max-w-7xl mx-auto space-y-5">
@@ -67,7 +183,7 @@ export default function JobseekersPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-4 flex gap-3 flex-wrap">
+      <div className="bg-white rounded-2xl border border-gray-100 p-4 flex gap-3 flex-wrap items-center">
         <div className="flex-1 min-w-48 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
@@ -77,28 +193,32 @@ export default function JobseekersPage() {
             className="w-full bg-[#F8F9FC] border border-gray-100 rounded-xl pl-9 pr-4 py-2.5 text-sm outline-none focus:border-[#1E3FAE] focus:ring-2 focus:ring-[#1E3FAE]/10 transition"
           />
         </div>
-        <div className="relative">
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="appearance-none bg-[#F8F9FC] border border-gray-100 rounded-xl pl-3 pr-8 py-2.5 text-sm outline-none focus:border-[#1E3FAE] transition cursor-pointer"
+
+        <MultiSelect
+          label="Statuses"
+          options={statusOptions}
+          selected={selectedStatuses}
+          onChange={setSelectedStatuses}
+        />
+
+        <MultiSelect
+          label="LGAs"
+          options={lgaOptions}
+          selected={selectedLGAs}
+          onChange={setSelectedLGAs}
+        />
+
+        {activeFilterCount > 0 && (
+          <button
+            onClick={() => { setSelectedStatuses(new Set()); setSelectedLGAs(new Set()); }}
+            className="flex items-center gap-1.5 text-xs font-semibold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-2.5 rounded-xl transition"
           >
-            {["All", "seeking", "employed", "underemployed", "training"].map((s) => (
-              <option key={s} value={s}>{s === "All" ? "All Statuses" : statusConfig[s]?.label}</option>
-            ))}
-          </select>
-          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
-        </div>
-        <div className="relative">
-          <select
-            value={lgaFilter}
-            onChange={(e) => setLgaFilter(e.target.value)}
-            className="appearance-none bg-[#F8F9FC] border border-gray-100 rounded-xl pl-3 pr-8 py-2.5 text-sm outline-none focus:border-[#1E3FAE] transition cursor-pointer"
-          >
-            {lgas.map((l) => <option key={l}>{l}</option>)}
-          </select>
-          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" />
-        </div>
+            <X className="w-3.5 h-3.5" /> Clear filters
+            <span className="bg-red-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">
+              {activeFilterCount}
+            </span>
+          </button>
+        )}
       </div>
 
       {/* Table */}

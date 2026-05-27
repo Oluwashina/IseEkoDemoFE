@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
+  BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
 } from "recharts";
 import {
@@ -74,10 +74,13 @@ const KPI_CARDS = [
 ];
 
 const GENDER_DATA = [
-  { name: "Female", value: mockDashboardStats.femaleJobseekers, color: "#1E3FAE" },
-  { name: "Male", value: mockDashboardStats.maleJobseekers, color: "#0B1D6E" },
-  { name: "PWD", value: mockDashboardStats.disabilityRegistered, color: "#F5C518" },
+  { name: "Female",  value: mockDashboardStats.femaleJobseekers,      color: "#3B82F6" },
+  { name: "Male",    value: mockDashboardStats.maleJobseekers,         color: "#0B1D6E" },
+  { name: "PWD",     value: mockDashboardStats.disabilityRegistered,   color: "#F59E0B" },
 ];
+
+// Distinct per-bar colour ramp for LGA chart (dark → teal)
+const LGA_COLORS = ["#0B1D6E", "#1E3FAE", "#3B82F6", "#06B6D4", "#10B981"];
 
 const recentActivity = [
   { icon: CheckCircle, text: "CV validated for Adaeze Okonkwo", time: "5 min ago", color: "text-green-500" },
@@ -129,22 +132,29 @@ export default function AdminDashboard() {
             </div>
           </div>
           <ResponsiveContainer width="100%" height={200}>
-            <LineChart data={mockRegistrationTrend} margin={{ top: 5, right: 10, bottom: 5, left: -20 }}>
+            <AreaChart data={mockRegistrationTrend} margin={{ top: 5, right: 10, bottom: 5, left: -20 }}>
+              <defs>
+                <linearGradient id="regGradient" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%"  stopColor="#3B82F6" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="#3B82F6" stopOpacity={0}    />
+                </linearGradient>
+              </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" />
               <XAxis dataKey="month" tick={{ fontSize: 11, fill: "#9CA3AF" }} />
               <YAxis tick={{ fontSize: 11, fill: "#9CA3AF" }} />
               <Tooltip
                 contentStyle={{ borderRadius: "12px", border: "1px solid #E4E7EF", fontSize: "12px" }}
               />
-              <Line
+              <Area
                 type="monotone"
                 dataKey="count"
-                stroke="#1E3FAE"
+                stroke="#3B82F6"
                 strokeWidth={2.5}
-                dot={{ r: 4, fill: "#1E3FAE" }}
-                activeDot={{ r: 6 }}
+                fill="url(#regGradient)"
+                dot={{ r: 4, fill: "#3B82F6", strokeWidth: 2, stroke: "#fff" }}
+                activeDot={{ r: 6, fill: "#3B82F6", stroke: "#fff", strokeWidth: 2 }}
               />
-            </LineChart>
+            </AreaChart>
           </ResponsiveContainer>
         </div>
 
@@ -169,7 +179,7 @@ export default function AdminDashboard() {
                   ))}
                 </Pie>
                 <Tooltip
-                  formatter={(value: number) => value.toLocaleString()}
+                  formatter={(value) => (typeof value === "number" ? value.toLocaleString() : value)}
                   contentStyle={{ borderRadius: "12px", border: "1px solid #E4E7EF", fontSize: "12px" }}
                 />
               </PieChart>
@@ -203,16 +213,16 @@ export default function AdminDashboard() {
               <Tooltip
                 contentStyle={{ borderRadius: "12px", border: "1px solid #E4E7EF", fontSize: "12px" }}
               />
-              <Bar dataKey="demand" name="Demand" fill="#1E3FAE" radius={[0, 4, 4, 0]} barSize={8} />
-              <Bar dataKey="supply" name="Supply" fill="#F5C518" radius={[0, 4, 4, 0]} barSize={8} />
+              <Bar dataKey="demand" name="Vacancies"   fill="#6366F1" radius={[0, 4, 4, 0]} barSize={8} />
+              <Bar dataKey="supply" name="Candidates"  fill="#10B981" radius={[0, 4, 4, 0]} barSize={8} />
             </BarChart>
           </ResponsiveContainer>
-          <div className="flex gap-4 mt-2">
+          <div className="flex gap-5 mt-3">
             <div className="flex items-center gap-1.5 text-xs text-gray-500">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#1E3FAE]" /> Demand
+              <div className="w-3 h-3 rounded-sm bg-[#6366F1]" /> Vacancies
             </div>
             <div className="flex items-center gap-1.5 text-xs text-gray-500">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#F5C518]" /> Supply
+              <div className="w-3 h-3 rounded-sm bg-[#10B981]" /> Candidates
             </div>
           </div>
         </div>
@@ -225,18 +235,22 @@ export default function AdminDashboard() {
             <div className="flex flex-col gap-2.5">
               {mockLGADistribution.slice(0, 5).map((item, i) => {
                 const max = mockLGADistribution[0].count;
+                const color = LGA_COLORS[i];
                 return (
                   <div key={item.lga} className="flex items-center gap-3">
                     <span className="text-xs font-bold text-gray-400 w-4">{i + 1}</span>
                     <div className="flex-1">
                       <div className="flex justify-between text-xs mb-1">
-                        <span className="font-medium text-[#374151]">{item.lga}</span>
-                        <span className="text-gray-400">{item.count.toLocaleString()}</span>
+                        <span className="font-medium text-[#374151] flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+                          {item.lga}
+                        </span>
+                        <span className="text-gray-400 font-semibold">{item.count.toLocaleString()}</span>
                       </div>
                       <div className="h-1.5 bg-gray-100 rounded-full">
                         <div
-                          className="h-1.5 bg-[#1E3FAE] rounded-full"
-                          style={{ width: `${(item.count / max) * 100}%` }}
+                          className="h-1.5 rounded-full transition-all"
+                          style={{ width: `${(item.count / max) * 100}%`, backgroundColor: color }}
                         />
                       </div>
                     </div>

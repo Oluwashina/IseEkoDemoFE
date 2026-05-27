@@ -15,7 +15,7 @@ export const mockUser = {
   disability: false,
   disabilityType: null,
   profileImage: null,
-  profileCompletion: 78,
+  profileCompletion: 88,
   joinedDate: "2026-03-15",
   isVerified: true,
   cvValidated: true,

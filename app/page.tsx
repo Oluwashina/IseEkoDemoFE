@@ -225,7 +225,7 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-3">
             <Link href="/login" className="text-sm font-medium text-gray-600 hover:text-[#0B1D6E] transition hidden sm:block">
-              Log in
+              Sign In
             </Link>
             <Link
               href="/register"

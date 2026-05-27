@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import Link from "next/link";
 import {
   Eye, EyeOff, ChevronDown,
   Users, Wrench, Building2, Briefcase, GraduationCap, BarChart3,
   ArrowRight, Lock, Search, CheckCircle, XCircle, Loader2,
-  ShieldCheck, RefreshCw,
+  ShieldCheck, RefreshCw, Plus, X,
 } from "lucide-react";
 import IseEkoLogo from "@/components/ui/IseEkoLogo";
 import { mockLGAs } from "@/lib/mock/jobs";
@@ -27,6 +27,18 @@ const MOCK_PROFILE = {
   lga:         "Ikeja",
   phone:       "08012345678",
 };
+
+// ─── Preset skills ────────────────────────────────────────────────────────────
+
+const PRESET_SKILLS = [
+  "React", "Python", "JavaScript", "TypeScript", "Node.js",
+  "Marketing", "Accounting", "Tailoring", "Plumbing", "Carpentry",
+  "Sales", "Teaching", "Nursing", "Data Analysis", "Driving",
+  "Cooking / Catering", "Graphic Design", "Electrical", "Welding",
+  "Customer Service", "Photography", "Video Editing", "Content Writing",
+  "Social Media", "Project Management", "AutoCAD", "Microsoft Office",
+  "Hairdressing", "Fashion Design", "Logistics", "Security",
+];
 
 // ─── User types ───────────────────────────────────────────────────────────────
 
@@ -116,6 +128,40 @@ export default function RegisterPage() {
 
   // Pre-populated profile from lookup
   const [prefilled, setPrefilled] = useState<typeof MOCK_PROFILE | null>(null);
+
+  // Skills state
+  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
+  const [skillInput, setSkillInput]         = useState("");
+  const skillInputRef = useRef<HTMLInputElement>(null);
+
+  const skillSuggestions = useMemo(() => {
+    const q = skillInput.trim().toLowerCase();
+    if (!q) return [];
+    return PRESET_SKILLS.filter(
+      (s) => s.toLowerCase().includes(q) && !selectedSkills.includes(s)
+    ).slice(0, 6);
+  }, [skillInput, selectedSkills]);
+
+  const addSkill = (skill: string) => {
+    const trimmed = skill.trim();
+    if (!trimmed || selectedSkills.includes(trimmed)) return;
+    setSelectedSkills((prev) => [...prev, trimmed]);
+    setSkillInput("");
+    skillInputRef.current?.focus();
+  };
+
+  const removeSkill = (skill: string) =>
+    setSelectedSkills((prev) => prev.filter((s) => s !== skill));
+
+  const handleSkillKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if ((e.key === "Enter" || e.key === ",") && skillInput.trim()) {
+      e.preventDefault();
+      addSkill(skillInput);
+    }
+    if (e.key === "Backspace" && !skillInput && selectedSkills.length > 0) {
+      removeSkill(selectedSkills[selectedSkills.length - 1]);
+    }
+  };
 
   // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -784,7 +830,7 @@ export default function RegisterPage() {
                 <div>
                   <label className="block text-sm font-medium text-[#374151] mb-1.5">Current Employment Status</label>
                   <div className="grid grid-cols-2 gap-2">
-                    {["Unemployed", "Underemployed", "Self-employed", "Student"].map((s) => (
+                    {["Unemployed", "Employed", "Self-employed", "Student"].map((s) => (
                       <label key={s} className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2.5 cursor-pointer hover:border-[#1E3FAE] hover:bg-[#EEF2FF] transition">
                         <input type="radio" name="status" className="accent-[#1E3FAE]" />
                         <span className="text-sm text-gray-700">{s}</span>
@@ -794,16 +840,93 @@ export default function RegisterPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-[#374151] mb-1.5">
-                    Key Skills <span className="text-gray-400 font-normal">(select all that apply)</span>
+                    Key Skills
+                    <span className="text-gray-400 font-normal ml-1">
+                      — type to search or add your own
+                    </span>
                   </label>
-                  <div className="flex flex-wrap gap-2">
-                    {["React", "Python", "Marketing", "Accounting", "Tailoring", "Plumbing", "Carpentry", "Sales", "Teaching", "Nursing", "Data Analysis", "Driving", "Cooking/Catering", "Graphic Design", "Electrical"].map((skill) => (
-                      <label key={skill} className="flex items-center gap-1.5 border border-gray-200 rounded-full px-3 py-1 cursor-pointer hover:border-[#1E3FAE] hover:bg-[#EEF2FF] transition text-sm text-gray-700">
-                        <input type="checkbox" className="accent-[#1E3FAE] w-3 h-3" />
+
+                  {/* Tag input box */}
+                  <div
+                    onClick={() => skillInputRef.current?.focus()}
+                    className="min-h-[48px] flex flex-wrap gap-1.5 border border-gray-200 rounded-xl px-3 py-2.5 cursor-text focus-within:border-[#1E3FAE] focus-within:ring-2 focus-within:ring-[#1E3FAE]/15 transition"
+                  >
+                    {selectedSkills.map((skill) => (
+                      <span
+                        key={skill}
+                        className="flex items-center gap-1 bg-[#EEF2FF] text-[#1E3FAE] text-xs font-semibold px-2.5 py-1 rounded-full"
+                      >
                         {skill}
-                      </label>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); removeSkill(skill); }}
+                          className="hover:text-red-500 transition ml-0.5"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
                     ))}
+                    <input
+                      ref={skillInputRef}
+                      type="text"
+                      value={skillInput}
+                      onChange={(e) => setSkillInput(e.target.value)}
+                      onKeyDown={handleSkillKeyDown}
+                      placeholder={selectedSkills.length === 0 ? "e.g. React, Tailoring, Accounting…" : "Add more…"}
+                      className="flex-1 min-w-[140px] text-sm outline-none bg-transparent placeholder:text-gray-400"
+                    />
                   </div>
+                  <p className="text-xs text-gray-400 mt-1.5">
+                    Press <kbd className="bg-gray-100 border border-gray-200 rounded px-1 text-[10px]">Enter</kbd> or <kbd className="bg-gray-100 border border-gray-200 rounded px-1 text-[10px]">,</kbd> to add a skill · Backspace to remove the last one
+                  </p>
+
+                  {/* Autocomplete dropdown */}
+                  {skillSuggestions.length > 0 && (
+                    <div className="mt-1 border border-gray-200 rounded-xl bg-white shadow-lg overflow-hidden z-10 relative">
+                      {skillSuggestions.map((s) => (
+                        <button
+                          key={s}
+                          type="button"
+                          onMouseDown={(e) => { e.preventDefault(); addSkill(s); }}
+                          className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-left hover:bg-[#EEF2FF] hover:text-[#1E3FAE] transition"
+                        >
+                          <Plus className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                          {s}
+                        </button>
+                      ))}
+                      {skillInput.trim() && !PRESET_SKILLS.some(
+                        (s) => s.toLowerCase() === skillInput.trim().toLowerCase()
+                      ) && (
+                        <button
+                          type="button"
+                          onMouseDown={(e) => { e.preventDefault(); addSkill(skillInput); }}
+                          className="w-full flex items-center gap-2 px-4 py-2.5 text-sm text-left border-t border-gray-100 hover:bg-[#EEF2FF] hover:text-[#1E3FAE] transition"
+                        >
+                          <Plus className="w-3.5 h-3.5 text-[#1E3FAE] flex-shrink-0" />
+                          Add &ldquo;<span className="font-semibold">{skillInput.trim()}</span>&rdquo; as a custom skill
+                        </button>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Quick-add popular skills */}
+                  {selectedSkills.length < 3 && skillInput === "" && (
+                    <div className="mt-2.5">
+                      <p className="text-xs text-gray-400 mb-1.5">Popular skills — tap to add:</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {PRESET_SKILLS.filter((s) => !selectedSkills.includes(s)).slice(0, 10).map((s) => (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={() => addSkill(s)}
+                            className="text-xs border border-gray-200 rounded-full px-2.5 py-1 text-gray-600 hover:border-[#1E3FAE] hover:bg-[#EEF2FF] hover:text-[#1E3FAE] transition"
+                          >
+                            + {s}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-[#374151] mb-1.5">Work Preference</label>

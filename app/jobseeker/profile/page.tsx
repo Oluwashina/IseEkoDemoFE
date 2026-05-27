@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import {
   Plus, Pencil, Check, User, GraduationCap, Briefcase,
-  Tag, Shield, Lock, X, Save, ChevronDown,
+  Tag, Shield, Lock, X, Save, ChevronDown, AlertCircle, ChevronRight,
 } from "lucide-react";
 import { mockUser } from "@/lib/mock/user";
+import { useProfile } from "@/lib/profileContext";
 
 const TABS = ["Personal Info", "Education", "Experience", "Skills", "Identity"];
 
@@ -169,8 +170,20 @@ export default function ProfilePage() {
 
   // ── Personal Info state ────────────────────────────────────────────────────
   const [personalEdit, setPersonalEdit] = useState(false);
-  const [phone,   setPhone]   = useState(mockUser.phone);
   const [address, setAddress] = useState(mockUser.address);
+
+  // ── Profile photo (from shared context so sidebar/dashboard stay in sync) ──
+  const { photoUrl, setPhotoUrl, profileCompletion: ctxCompletion } = useProfile();
+  const photoInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoPick = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setPhotoUrl(URL.createObjectURL(file));
+  }, [setPhotoUrl]);
+
+  // ── Completion checklist toggle ────────────────────────────────────────────
+  const [showCompletion, setShowCompletion] = useState(false);
 
   // ── Education state ────────────────────────────────────────────────────────
   const [eduItems, setEduItems]     = useState<EduItem[]>(mockUser.education);
@@ -219,6 +232,22 @@ export default function ProfilePage() {
   }
   function deleteExp(id: string) { setExpItems((p) => p.filter((e) => e.id !== id)); }
 
+  // ── Completion checklist (reactive to live state) ─────────────────────────
+  const completionItems: { label: string; done: boolean; hint: string; tab: number | null; onFix?: () => void }[] = [
+    { label: "Identity verified",  done: mockUser.isVerified,    hint: mockUser.isVerified ? "NIN & LASSRA verified" : "Verify your NIN or LASSRA", tab: 4 },
+    { label: "Personal info",      done: true,                   hint: "Name, LGA, address on file",                                                 tab: 0 },
+    { label: "Education",          done: eduItems.length > 0,    hint: eduItems.length > 0 ? `${eduItems.length} qualification${eduItems.length > 1 ? "s" : ""} added` : "No education added yet", tab: 1 },
+    { label: "Work experience",    done: expItems.length > 0,    hint: expItems.length > 0 ? `${expItems.length} role${expItems.length > 1 ? "s" : ""} added` : "No work history added yet", tab: 2 },
+    { label: "Skills (5 or more)", done: skills.length >= 5,     hint: skills.length > 0 ? `${skills.length} skill${skills.length > 1 ? "s" : ""} listed` : "No skills added yet", tab: 3 },
+    { label: "CV uploaded",        done: true,                   hint: "Adaeze_CV_2026.pdf",                                                         tab: null },
+    { label: "CV validated",       done: mockUser.cvValidated,   hint: mockUser.cvValidated ? "Ministry-validated badge active" : "Awaiting Ministry review", tab: null },
+    { label: "Profile photo",      done: !!photoUrl,             hint: photoUrl ? "Photo uploaded" : "No photo uploaded yet",                        tab: null, onFix: () => photoInputRef.current?.click() },
+  ];
+  const doneCount  = completionItems.filter((c) => c.done).length;
+  const totalCount = completionItems.length;
+  // Use the context value so the % is always in sync with sidebar/dashboard
+  const pct = ctxCompletion;
+
   return (
     <div className="max-w-4xl mx-auto space-y-5">
       {/* Page header */}
@@ -229,20 +258,43 @@ export default function ProfilePage() {
         </div>
         <div className="bg-[#EEF2FF] rounded-xl px-4 py-2 text-center flex-shrink-0">
           <p className="text-xs text-gray-500">Completion</p>
-          <p className="text-lg font-bold text-[#1E3FAE]">{mockUser.profileCompletion}%</p>
+          <p className="text-lg font-bold text-[#1E3FAE]">{pct}%</p>
         </div>
       </div>
 
       {/* Profile header card */}
       <div className="bg-white rounded-2xl border border-gray-100 p-5">
         <div className="flex items-center gap-4">
-          <div className="relative flex-shrink-0">
-            <div className="w-16 h-16 rounded-2xl bg-[#0B1D6E] flex items-center justify-center text-white text-xl font-bold">
-              {mockUser.firstName[0]}{mockUser.lastName[0]}
-            </div>
-            <button className="absolute -bottom-1.5 -right-1.5 w-6 h-6 bg-[#1E3FAE] rounded-full flex items-center justify-center shadow-md hover:bg-[#0B1D6E] transition">
+          {/* Clickable avatar */}
+          <div className="relative flex-shrink-0 group">
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handlePhotoPick}
+            />
+            <button
+              onClick={() => photoInputRef.current?.click()}
+              className="w-16 h-16 rounded-2xl overflow-hidden bg-[#0B1D6E] flex items-center justify-center text-white text-xl font-bold focus:outline-none focus:ring-2 focus:ring-[#1E3FAE] transition"
+            >
+              {photoUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={photoUrl} alt="Profile" className="w-full h-full object-cover" />
+              ) : (
+                <span>{mockUser.firstName[0]}{mockUser.lastName[0]}</span>
+              )}
+            </button>
+            <button
+              onClick={() => photoInputRef.current?.click()}
+              className="absolute -bottom-1.5 -right-1.5 w-6 h-6 bg-[#1E3FAE] rounded-full flex items-center justify-center shadow-md hover:bg-[#0B1D6E] transition"
+            >
               <Pencil className="w-3 h-3 text-white" />
             </button>
+            {/* Hover overlay hint */}
+            <div className="absolute inset-0 rounded-2xl bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center pointer-events-none">
+              <Pencil className="w-4 h-4 text-white" />
+            </div>
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
@@ -258,18 +310,67 @@ export default function ProfilePage() {
                 </span>
               )}
             </div>
-            <p className="text-sm text-gray-500 mt-0.5 truncate">{mockUser.email} · {phone}</p>
+            <p className="text-sm text-gray-500 mt-0.5 truncate">{mockUser.email} · {mockUser.phone}</p>
             <p className="text-sm text-gray-500">{mockUser.lga}, Lagos State</p>
           </div>
         </div>
         <div className="mt-4">
-          <div className="flex justify-between text-xs mb-1">
-            <span className="text-gray-500">Profile completeness</span>
-            <span className="font-semibold text-[#1E3FAE]">{mockUser.profileCompletion}%</span>
-          </div>
-          <div className="h-2 bg-gray-100 rounded-full">
-            <div className="h-2 bg-[#1E3FAE] rounded-full transition-all" style={{ width: `${mockUser.profileCompletion}%` }} />
-          </div>
+          {/* Bar + toggle */}
+          <button
+            onClick={() => setShowCompletion((v) => !v)}
+            className="w-full text-left group"
+          >
+            <div className="flex justify-between text-xs mb-1.5">
+              <span className="text-gray-500 group-hover:text-gray-700 transition">
+                Profile completeness —{" "}
+                {pct === 100
+                  ? <span className="font-semibold text-green-600">All sections complete 🎉</span>
+                  : <span className="font-semibold text-[#111827]">{doneCount} of {totalCount} sections done</span>
+                }
+              </span>
+              <span className="flex items-center gap-1 font-semibold text-[#1E3FAE]">
+                {pct}%
+                <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showCompletion ? "rotate-180" : ""}`} />
+              </span>
+            </div>
+            <div className="h-2 bg-gray-100 rounded-full">
+              <div
+                className={`h-2 rounded-full transition-all ${pct === 100 ? "bg-green-500" : pct >= 75 ? "bg-[#1E3FAE]" : "bg-orange-400"}`}
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+          </button>
+
+          {/* Expandable checklist */}
+          {showCompletion && (
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+              {completionItems.map(({ label, done, hint, tab, onFix }) => (
+                <div
+                  key={label}
+                  className={`flex items-start gap-2.5 rounded-xl px-3 py-2.5 ${done ? "bg-green-50" : "bg-orange-50"}`}
+                >
+                  <div className={`w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 ${done ? "bg-green-500" : "bg-orange-400"}`}>
+                    {done
+                      ? <Check className="w-2.5 h-2.5 text-white" />
+                      : <AlertCircle className="w-2.5 h-2.5 text-white" />
+                    }
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-xs font-semibold ${done ? "text-green-800" : "text-orange-800"}`}>{label}</p>
+                    <p className={`text-[11px] mt-0.5 ${done ? "text-green-600" : "text-orange-600"}`}>{hint}</p>
+                  </div>
+                  {!done && (tab !== null || onFix) && (
+                    <button
+                      onClick={() => tab !== null ? setActiveTab(tab) : onFix?.()}
+                      className="flex items-center gap-0.5 text-[11px] font-bold text-orange-700 hover:text-orange-900 transition flex-shrink-0 mt-0.5"
+                    >
+                      Fix <ChevronRight className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
@@ -317,7 +418,7 @@ export default function ProfilePage() {
             {personalEdit && (
               <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 rounded-xl px-4 py-2.5 mb-4 text-xs text-blue-700">
                 <Lock className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
-                <span>Only <strong>Phone Number</strong> and <strong>Address</strong> can be changed. Other fields are set at registration and verified by the platform.</span>
+                <span>Only your <strong>Address</strong> can be updated here. All other fields are locked as they were verified at registration.</span>
               </div>
             )}
 
@@ -329,13 +430,8 @@ export default function ProfilePage() {
               <FieldRow label="Gender"        value={mockUser.gender}                  locked={personalEdit} />
               <FieldRow label="LGA"           value={mockUser.lga}                     locked={personalEdit} />
 
-              {/* Phone — editable */}
-              <FieldRow label="Phone Number" value={phone} editable={personalEdit}>
-                {personalEdit ? (
-                  <input value={phone} onChange={(e) => setPhone(e.target.value)}
-                    className="w-full mt-0.5 bg-transparent text-sm font-medium text-[#111827] outline-none border-b border-[#1E3FAE]/40 pb-0.5 focus:border-[#1E3FAE]" />
-                ) : <p className="text-sm font-medium text-[#111827]">{phone}</p>}
-              </FieldRow>
+              {/* Phone — always locked */}
+              <FieldRow label="Phone Number" value={mockUser.phone} locked={personalEdit} />
 
               {/* Address — editable */}
               <FieldRow label="Address" value={address} editable={personalEdit}>

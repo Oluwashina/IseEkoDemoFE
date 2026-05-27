@@ -3,6 +3,7 @@
 import { useState } from "react";
 import JobseekerSidebar from "@/components/jobseeker/JobseekerSidebar";
 import JobseekerTopbar from "@/components/jobseeker/JobseekerTopbar";
+import { ProfileProvider } from "@/lib/profileContext";
 
 export default function JobseekerLayout({
   children,
@@ -12,6 +13,7 @@ export default function JobseekerLayout({
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
+    <ProfileProvider>
     <div className="flex h-screen bg-[#F8F9FC] overflow-hidden">
       {/* Desktop sidebar */}
       <div className="hidden lg:flex flex-shrink-0">
@@ -37,5 +39,6 @@ export default function JobseekerLayout({
         <main className="flex-1 overflow-y-auto p-6">{children}</main>
       </div>
     </div>
+    </ProfileProvider>
   );
 }

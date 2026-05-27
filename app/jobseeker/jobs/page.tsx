@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   Search, MapPin, Clock, Bookmark, BookmarkCheck,
   SlidersHorizontal, ChevronDown, ExternalLink, X,
   CheckCircle, Star, CalendarCheck, Gift, Video,
   Phone, Building2, FileText, AlertCircle, XCircle,
+  Send, Loader2, ShieldCheck, Paperclip,
 } from "lucide-react";
 import { mockJobs, mockSectors, mockLGAs } from "@/lib/mock/jobs";
 import { mockUser } from "@/lib/mock/user";
@@ -40,6 +41,12 @@ export default function JobsPage() {
     new Set(getSessionApplications().map((a) => a.jobId))
   );
 
+  // Apply drawer state
+  const [applyDrawerJob, setApplyDrawerJob] = useState<typeof mockJobs[0] | null>(null);
+  const [coverLetter, setCoverLetter]       = useState("");
+  const [applyStage, setApplyStage]         = useState<"form" | "submitting" | "success">("form");
+  const applyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const allAppliedIds = new Set([
     ...mockUser.applications.map((a) => a.jobId),
     ...sessionApplied,
@@ -51,17 +58,33 @@ export default function JobsPage() {
     return null;
   }
 
-  function handleApply(jobId: string) {
-    const job = mockJobs.find((j) => j.id === jobId);
-    if (!job || allAppliedIds.has(jobId)) return;
-    sessionApply({
-      jobId,
-      jobTitle: job.title,
-      company:  job.company,
-      appliedDate: new Date().toISOString().slice(0, 10),
-      status: "applied",
-    });
-    setSessionApplied((prev) => new Set([...prev, jobId]));
+  function openApplyDrawer(job: typeof mockJobs[0]) {
+    setCoverLetter("");
+    setApplyStage("form");
+    setApplyDrawerJob(job);
+  }
+
+  function closeApplyDrawer() {
+    if (applyTimerRef.current) clearTimeout(applyTimerRef.current);
+    setApplyDrawerJob(null);
+    setApplyStage("form");
+  }
+
+  function submitApplication() {
+    if (!applyDrawerJob) return;
+    setApplyStage("submitting");
+    applyTimerRef.current = setTimeout(() => {
+      // Commit the application to the session store
+      sessionApply({
+        jobId:       applyDrawerJob.id,
+        jobTitle:    applyDrawerJob.title,
+        company:     applyDrawerJob.company,
+        appliedDate: new Date().toISOString().slice(0, 10),
+        status:      "applied",
+      });
+      setSessionApplied((prev) => new Set([...prev, applyDrawerJob.id]));
+      setApplyStage("success");
+    }, 1800);
   }
 
   const filtered = mockJobs.filter((j) => {
@@ -278,9 +301,9 @@ export default function JobsPage() {
               {/* CTA row — changes per status */}
               <div className="flex gap-3 mt-4">
                 {!selStatus ? (
-                  <button onClick={() => handleApply(selectedJob.id)}
-                    className="flex-1 bg-[#1E3FAE] hover:bg-[#0B1D6E] text-white font-semibold py-2.5 rounded-xl text-sm transition-colors">
-                    Apply Now
+                  <button onClick={() => openApplyDrawer(selectedJob)}
+                    className="flex-1 bg-[#1E3FAE] hover:bg-[#0B1D6E] text-white font-semibold py-2.5 rounded-xl text-sm transition-colors flex items-center justify-center gap-1.5">
+                    <Send className="w-4 h-4" /> Apply Now
                   </button>
                 ) : selStatus === "applied" ? (
                   <button disabled className="flex-1 flex items-center justify-center gap-1.5 bg-blue-50 text-blue-600 font-semibold py-2.5 rounded-xl text-sm cursor-default">
@@ -350,6 +373,159 @@ export default function JobsPage() {
               </div>
             </div>
           </div>
+        )}
+      </div>
+
+      {/* ── Apply Drawer ─────────────────────────────────────────── */}
+      {/* Backdrop */}
+      <div
+        onClick={closeApplyDrawer}
+        className={`fixed inset-0 z-40 bg-black/40 transition-opacity duration-300 ${
+          applyDrawerJob ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+      />
+      {/* Panel */}
+      <div className={`fixed top-0 right-0 z-50 h-full w-full sm:w-[480px] bg-white shadow-2xl flex flex-col transition-transform duration-300 ${
+        applyDrawerJob ? "translate-x-0" : "translate-x-full"
+      }`}>
+        {applyDrawerJob && (
+          <>
+            {/* Drawer header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <div>
+                <h3 className="font-bold text-[#111827]">Apply for this role</h3>
+                <p className="text-xs text-gray-400 mt-0.5">{applyDrawerJob.title} · {applyDrawerJob.company}</p>
+              </div>
+              <button onClick={closeApplyDrawer} className="text-gray-400 hover:text-gray-600 transition">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Drawer body */}
+            <div className="flex-1 overflow-y-auto px-6 py-5 space-y-5">
+
+              {applyStage === "success" ? (
+                /* ── Success state ── */
+                <div className="flex flex-col items-center justify-center h-full text-center gap-4 py-16">
+                  <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
+                    <CheckCircle className="w-10 h-10 text-green-500" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-[#111827]">Application Submitted!</h3>
+                    <p className="text-sm text-gray-500 mt-1.5 max-w-xs mx-auto leading-relaxed">
+                      Your application for <span className="font-semibold text-[#111827]">{applyDrawerJob.title}</span> at{" "}
+                      <span className="font-semibold text-[#111827]">{applyDrawerJob.company}</span> has been sent.
+                    </p>
+                  </div>
+                  <div className="bg-[#EEF2FF] border border-[#1E3FAE]/20 rounded-xl px-4 py-3 text-xs text-[#1E3FAE] max-w-xs">
+                    You can track your application status on the <span className="font-semibold">Applications</span> page.
+                  </div>
+                  <button
+                    onClick={closeApplyDrawer}
+                    className="mt-2 bg-[#1E3FAE] hover:bg-[#0B1D6E] text-white font-semibold px-8 py-2.5 rounded-xl text-sm transition"
+                  >
+                    Done
+                  </button>
+                </div>
+              ) : (
+                /* ── Form state ── */
+                <>
+                  {/* Job summary card */}
+                  <div className="flex items-center gap-3 bg-[#F8F9FC] rounded-xl p-4">
+                    <div className="w-11 h-11 rounded-xl flex items-center justify-center text-white font-bold flex-shrink-0" style={{ backgroundColor: applyDrawerJob.logoColor }}>
+                      {applyDrawerJob.logo}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-sm text-[#111827]">{applyDrawerJob.title}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">{applyDrawerJob.company} · {applyDrawerJob.location}</p>
+                    </div>
+                    <span className={`text-xs font-bold px-2.5 py-1 rounded-lg flex-shrink-0 ${
+                      applyDrawerJob.matchScore >= 90 ? "bg-green-100 text-green-700"
+                      : applyDrawerJob.matchScore >= 75 ? "bg-blue-100 text-blue-700"
+                      : "bg-yellow-100 text-yellow-700"
+                    }`}>{applyDrawerJob.matchScore}% match</span>
+                  </div>
+
+                  {/* CV auto-attached */}
+                  <div>
+                    <p className="text-sm font-semibold text-[#374151] mb-2">CV / Resume</p>
+                    <div className="flex items-center gap-3 border border-gray-200 rounded-xl p-3">
+                      <div className="w-9 h-9 bg-[#1E3FAE] rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Paperclip className="w-4 h-4 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-[#111827] truncate">Adaeze_CV_2026.pdf</p>
+                        <p className="text-xs text-gray-400 mt-0.5">2.1 MB · Uploaded 10 May 2026</p>
+                      </div>
+                      {mockUser.cvValidated && (
+                        <span className="flex items-center gap-1 text-[10px] font-bold text-green-700 bg-green-100 px-2 py-0.5 rounded-full flex-shrink-0">
+                          <ShieldCheck className="w-3 h-3" /> Validated
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1.5">
+                      Your active CV will be attached. To change it, update it on the{" "}
+                      <span className="text-[#1E3FAE] font-medium cursor-pointer hover:underline">CV page</span>.
+                    </p>
+                  </div>
+
+                  {/* Cover letter */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-sm font-semibold text-[#374151]">Cover Letter</p>
+                      <span className="text-xs bg-gray-100 text-gray-500 font-medium px-2 py-0.5 rounded-full">Optional</span>
+                    </div>
+                    <textarea
+                      value={coverLetter}
+                      onChange={(e) => setCoverLetter(e.target.value)}
+                      maxLength={1000}
+                      rows={7}
+                      placeholder={`Dear Hiring Manager,\n\nI am excited to apply for the ${applyDrawerJob.title} role at ${applyDrawerJob.company}. With my background in…`}
+                      className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:border-[#1E3FAE] focus:ring-2 focus:ring-[#1E3FAE]/15 transition resize-none placeholder:text-gray-300 leading-relaxed"
+                    />
+                    <div className="flex items-center justify-between mt-1.5">
+                      <p className="text-xs text-gray-400">
+                        A cover letter can significantly improve your chances.
+                      </p>
+                      <span className={`text-xs font-medium ${coverLetter.length > 900 ? "text-orange-500" : "text-gray-400"}`}>
+                        {coverLetter.length}/1000
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Consent notice */}
+                  <div className="bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-xs text-gray-500 leading-relaxed">
+                    By submitting, you agree that your profile and CV will be shared with{" "}
+                    <span className="font-semibold text-[#111827]">{applyDrawerJob.company}</span> for this role.
+                    Your data is handled in accordance with the ISE EKO Privacy Policy.
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Drawer footer */}
+            {applyStage !== "success" && (
+              <div className="px-6 py-4 border-t border-gray-100 flex gap-3">
+                <button
+                  onClick={closeApplyDrawer}
+                  className="px-5 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={submitApplication}
+                  disabled={applyStage === "submitting"}
+                  className="flex-1 flex items-center justify-center gap-2 bg-[#1E3FAE] hover:bg-[#0B1D6E] disabled:opacity-70 text-white font-semibold py-2.5 rounded-xl text-sm transition"
+                >
+                  {applyStage === "submitting" ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Submitting…</>
+                  ) : (
+                    <><Send className="w-4 h-4" /> Submit Application</>
+                  )}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
